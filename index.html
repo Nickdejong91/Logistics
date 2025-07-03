@@ -68,7 +68,7 @@
 
 <script>
   async function fetchSheetData(rangeName) {
-    const response = await fetch("https://script.google.com/a/macros/teamredbear.com/s/AKfycbzRT1PJf4TAZJxj6cCNLMRA3l-3YDdjB3mxeYRR0azXxQdFjxvUatyE6PiclA3_exQX/exec?range=" + rangeName);
+    const response = await fetch("https://script.google.com/a/macros/teamredbear.com/s/AKfycbzIAe5Ur76cl6eilVqVhT01X-gy8kLSnhzQdfjc6MCpxKxGYfWZ90nMJgfnjTjFHaw0/exec?range=" + rangeName);
     return await response.json();
   }
 
@@ -111,7 +111,7 @@
 
     for (const data of queue) {
       try {
-        await fetch("https://script.google.com/a/macros/teamredbear.com/s/AKfycbzRT1PJf4TAZJxj6cCNLMRA3l-3YDdjB3mxeYRR0azXxQdFjxvUatyE6PiclA3_exQX/exec", {
+        await fetch("https://script.google.com/a/macros/teamredbear.com/s/AKfycbzIAe5Ur76cl6eilVqVhT01X-gy8kLSnhzQdfjc6MCpxKxGYfWZ90nMJgfnjTjFHaw0/exec", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data)
@@ -141,7 +141,7 @@
       saveFormLocally(formData);
     } else {
       try {
-        await fetch("https://script.google.com/a/macros/teamredbear.com/s/AKfycbzRT1PJf4TAZJxj6cCNLMRA3l-3YDdjB3mxeYRR0azXxQdFjxvUatyE6PiclA3_exQX/exec", {
+        await fetch("https://script.google.com/a/macros/teamredbear.com/s/AKfycbzIAe5Ur76cl6eilVqVhT01X-gy8kLSnhzQdfjc6MCpxKxGYfWZ90nMJgfnjTjFHaw0/exec", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData)
