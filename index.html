@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Goods Delivery Form</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; }
+    button { margin-top: 20px; padding: 10px 15px; font-size: 16px; }
+    #statusBar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+      color: white;
+      background-color: green;
+      z-index: 1000;
+    }
+    #statusBar.offline {
+      background-color: red;
+    }
+  </style>
+</head>
+<body>
+
+<div id="statusBar">🟢 Online</div>
+
+<h2>Goods Delivery Confirmation</h2>
+
+<form id="deliveryForm">
+  <label for="site">Site</label>
+  <select id="site" name="site" required onchange="loadDeliveries()">
+    <option value="">Select a Site</option>
+  </select>
+
+  <label for="delivery">Delivery</label>
+  <select id="delivery" name="delivery" required>
+    <option value="">Select Delivery</option>
+  </select>
+
+  <label for="delivered">Items Delivered</label>
+  <textarea id="delivered" name="delivered" required></textarea>
+
+  <label for="missing">Items Missing or Issues</label>
+  <textarea id="missing" name="missing"></textarea>
+
+  <label for="complete">Delivery Complete</label>
+  <select id="complete" name="complete" required>
+    <option value="Yes">Yes</option>
+    <option value="No">No</option>
+  </select>
+
+  <label for="photo">Upload Photo</label>
+  <input type="file" id="photo" name="photo" accept="image/*">
+
+  <label for="signature">Upload Signature</label>
+  <input type="file" id="signature" name="signature" accept="image/*">
+
+  <label for="submittedBy">Submitted By</label>
+  <input type="text" id="submittedBy" name="submittedBy" required>
+
+  <button type="submit">Submit</button>
+</form>
+
+<script>
+  async function fetchSheetData(rangeName) {
+    const response = await fetch("https://script.google.com/a/macros/teamredbear.com/s/AKfycbzRT1PJf4TAZJxj6cCNLMRA3l-3YDdjB3mxeYRR0azXxQdFjxvUatyE6PiclA3_exQX/exec?range=" + rangeName);
+    return await response.json();
+  }
+
+  async function loadSites() {
+    const sites = await fetchSheetData("Sites!A:A");
+    const siteSelect = document.getElementById("site");
+    sites.values.slice(1).forEach(row => {
+      const option = document.createElement("option");
+      option.value = row[0];
+      option.textContent = row[0];
+      siteSelect.appendChild(option);
+    });
+  }
+
+  async function loadDeliveries() {
+    const site = document.getElementById("site").value;
+    const deliveries = await fetchSheetData("DeliveryPlan!A2:D");
+    const deliverySelect = document.getElementById("delivery");
+    deliverySelect.innerHTML = "<option value=''>Select Delivery</option>";
+    deliveries.values.forEach(row => {
+      if (row[1] === site) {
+        const option = document.createElement("option");
+        option.value = row[0];
+        option.textContent = `${row[0]} - ${row[2]} @ ${row[3]}`;
+        deliverySelect.appendChild(option);
+      }
+    });
+  }
+
+  function saveFormLocally(data) {
+    const queue = JSON.parse(localStorage.getItem("formQueue") || "[]");
+    queue.push(data);
+    localStorage.setItem("formQueue", JSON.stringify(queue));
+    alert("You are offline. Your data has been saved and will sync once you're online.");
+  }
+
+  async function syncQueuedForms() {
+    const queue = JSON.parse(localStorage.getItem("formQueue") || "[]");
+    if (queue.length === 0 || !navigator.onLine) return;
+
+    for (const data of queue) {
+      try {
+        await fetch("https://script.google.com/a/macros/teamredbear.com/s/AKfycbzRT1PJf4TAZJxj6cCNLMRA3l-3YDdjB3mxeYRR0azXxQdFjxvUatyE6PiclA3_exQX/exec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+      } catch (e) {
+        console.error("Sync failed for an entry:", e);
+        return; // Stop if one fails
+      }
+    }
+    localStorage.removeItem("formQueue");
+    alert("Offline data synced successfully.");
+  }
+
+  document.getElementById("deliveryForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const formData = {
+      site: document.getElementById("site").value,
+      delivery: document.getElementById("delivery").value,
+      delivered: document.getElementById("delivered").value,
+      missing: document.getElementById("missing").value,
+      complete: document.getElementById("complete").value,
+      submittedBy: document.getElementById("submittedBy").value,
+      timestamp: new Date().toISOString()
+    };
+
+    if (!navigator.onLine) {
+      saveFormLocally(formData);
+    } else {
+      try {
+        await fetch("https://script.google.com/a/macros/teamredbear.com/s/AKfycbzRT1PJf4TAZJxj6cCNLMRA3l-3YDdjB3mxeYRR0azXxQdFjxvUatyE6PiclA3_exQX/exec", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData)
+        });
+        alert("Form submitted successfully.");
+        document.getElementById("deliveryForm").reset();
+      } catch (err) {
+        alert("Submission failed. Your data will be saved and retried when online.");
+        saveFormLocally(formData);
+      }
+    }
+  });
+
+  function updateStatusBar() {
+    const statusBar = document.getElementById("statusBar");
+    if (navigator.onLine) {
+      statusBar.textContent = "🟢 Online";
+      statusBar.classList.remove("offline");
+      syncQueuedForms();
+    } else {
+      statusBar.textContent = "🔴 Offline – Data will sync when online";
+      statusBar.classList.add("offline");
+    }
+  }
+
+  window.addEventListener("online", updateStatusBar);
+  window.addEventListener("offline", updateStatusBar);
+
+  loadSites();
+  updateStatusBar();
+</script>
+
+</body>
+</html>
